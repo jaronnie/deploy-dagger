@@ -12,13 +12,13 @@ use golang's embed feature to build a front-backend app.
 
 ```shell
 git clone https://github.com/jaronnie/deploy-dagger.git
-cd embedApp
+cd deploy-dagger
 task install
 ```
 
 ## server
 
 ```shell
-embedApp server
+deploy-dagger server
 ```
 
