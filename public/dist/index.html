@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<script>
+var stream = new EventSource("/api/v1/deploy?project=hn-inspect-java&branch=dev");
+stream.addEventListener("message", function(e){
+    console.log(e.data);
+});
+</script>    
+</body>
+</html>
