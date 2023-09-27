@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"dagger.io/dagger"
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,7 @@ func ApiRouter(rg *gin.RouterGroup) {
 
 		projectName := c.Query("project")
 		branch := c.DefaultQuery("branch", "dev")
+		home, _ := os.UserHomeDir()
 		git := fmt.Sprintf("%s://oauth2:%s@%s/%s/%s", viper.GetString("git.protocol"), viper.GetString("git.accessToken"), viper.GetString("git.url"), viper.GetString("git.group"), projectName)
 		ctx := context.Background()
 
@@ -50,7 +52,7 @@ func ApiRouter(rg *gin.RouterGroup) {
 
 			// TODO 发送钉钉消息
 
-			settings := client.Host().File("/Users/jaronnie/.m2/settings.xml")
+			settings := client.Host().File(fmt.Sprintf("%s/.m2/settings.xml", home))
 			daggerCache := client.CacheVolume("maven")
 			// use a mvn:3.6.3 container
 			// get version
@@ -59,7 +61,7 @@ func ApiRouter(rg *gin.RouterGroup) {
 				WithExec([]string{"mvn", "--version"}).
 				WithFile("/root/.m2/settings.xml", settings).
 				WithDirectory("/src", project).
-				WithMountedCache("/Users/jaronnie/.m2/repository", daggerCache).
+				WithMountedCache(fmt.Sprintf("%s/.m2/repository", home), daggerCache).
 				WithWorkdir("/src").
 				WithExec([]string{"sh", "-c", "mvn package -Dmaven.test.skip=true"}).
 				File("./yx-admin/target/yx-admin.jar").
