@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jaronnie/deploy-dagger/server"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // serverCmd represents the server command
@@ -28,7 +29,11 @@ var serverCmd = &cobra.Command{
 		server.Cors(r)
 		server.Router(r)
 
-		base := fmt.Sprintf("%s:%s", "0.0.0.0", "8081")
+		port := viper.GetString("port")
+		if port == "" {
+			port = "8080"
+		}
+		base := fmt.Sprintf("%s:%s", "0.0.0.0", port)
 
 		go func() {
 			if err := r.Run(base); err != nil {
