@@ -5,11 +5,56 @@
     <title></title>
 </head>
 <body>
-<script>
-var stream = new EventSource("/api/v1/deploy?project=hn-inspect-java&branch=dev");
-stream.addEventListener("message", function(e){
-    console.log(e.data);
-});
-</script>    
+    <div id="eventData"></div>
+
+    <script>
+        var eventDataElement = document.getElementById("eventData");
+        var stream = new EventSource("/api/v1/deploy?project=hn-inspect-java&branch=dev");
+        stream.addEventListener("message", function(e){
+            // 将事件数据添加到 "eventData" 元素中
+            eventDataElement.innerHTML += convertAnsiToHtml(e.data) + "<br>";
+        });
+
+        // 自定义函数，用于将 ANSI 转义序列转换为带有颜色样式的 HTML
+        function convertAnsiToHtml(text) {
+            var html = '';
+            var colorCode = 0;
+
+            for (var i = 0; i < text.length; i++) {
+                var char = text[i];
+
+                if (char === '\x1b') {
+                    // 遇到转义字符，尝试解析颜色代码
+                    var match = text.slice(i).match(/\x1b\[(\d+)(;\d+)*m/);
+                    if (match) {
+                        colorCode = Number(match[1]);
+                        i += match[0].length - 1;
+                        continue;
+                    }
+                }
+
+                // 将字符包装在带有颜色样式的 <span> 元素中
+                var color = getColorForCode(colorCode);
+                html += '<span style="color: ' + color + ';">' + char + '</span>';
+            }
+
+            return html;
+        }
+
+        // 根据 ANSI 颜色代码返回对应的颜色值
+        function getColorForCode(code) {
+            // 在此处根据您的需求返回相应的颜色值
+            // 这里只提供了一些基本的颜色示例，您可以根据需要进行扩展
+            switch (code) {
+                case 31: return 'red';     // 红色
+                case 32: return 'green';   // 绿色
+                case 33: return 'yellow';  // 黄色
+                case 34: return 'blue';    // 蓝色
+                case 35: return 'purple';  // 紫色
+                case 36: return 'cyan';    // 青色
+                default: return 'inherit'; // 默认继承颜色
+            }
+        }
+    </script>
 </body>
 </html>

@@ -70,12 +70,8 @@ func ApiRouter(rg *gin.RouterGroup) {
 
 		c.Stream(func(w io.Writer) bool {
 			msg := <-writer.data
-
-			if string(msg) == "deploy DONE" {
-				return false
-			}
 			// Stream message to client from message channel
-			c.SSEvent("message", string(msg))
+			c.SSEvent("message", string(msg)+"\n")
 			return true
 		})
 	})
