@@ -1,0 +1,9 @@
+port = "30000"
+
+[git]
+private = true
+type = "gitlab"
+protocol = "http"
+url = "base_git_url"
+group = "your_group"
+accessToken = "your_access_token"

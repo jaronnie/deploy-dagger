@@ -9,14 +9,15 @@ import (
 	"dagger.io/dagger"
 	"github.com/gin-gonic/gin"
 	"github.com/jaronnie/deploy-dagger/server/middlewares"
+	"github.com/jaronnie/deploy-dagger/server/pkg/giturl"
 	"github.com/spf13/viper"
 )
 
-type MyWriter struct {
+type SSEWriter struct {
 	data chan []byte
 }
 
-func (w *MyWriter) Write(p []byte) (n int, err error) {
+func (w *SSEWriter) Write(p []byte) (n int, err error) {
 	w.data <- p
 	return len(p), nil
 }
@@ -31,10 +32,18 @@ func ApiRouter(rg *gin.RouterGroup) {
 		projectName := c.Query("project")
 		branch := c.DefaultQuery("branch", "dev")
 		home, _ := os.UserHomeDir()
-		git := fmt.Sprintf("%s://oauth2:%s@%s/%s/%s", viper.GetString("git.protocol"), viper.GetString("git.accessToken"), viper.GetString("git.url"), viper.GetString("git.group"), projectName)
+		git := giturl.GenCloneGitRepoUrl(&giturl.GitConfig{
+			Private:     viper.GetBool("git.private"),
+			Type:        viper.GetString("git.type"),
+			Protocol:    viper.GetString("git.protocol"),
+			Url:         viper.GetString("git.url"),
+			Group:       viper.GetString("git.group"),
+			ProjectName: projectName,
+			AccessToken: viper.GetString("git.accessToken"),
+		})
 		ctx := context.Background()
 
-		writer := &MyWriter{
+		writer := &SSEWriter{
 			data: make(chan []byte),
 		}
 
@@ -49,8 +58,6 @@ func ApiRouter(rg *gin.RouterGroup) {
 				Git(git).
 				Branch(branch).
 				Tree()
-
-			// TODO 发送钉钉消息
 
 			settings := client.Host().File(fmt.Sprintf("%s/.m2/settings.xml", home))
 			daggerCache := client.CacheVolume("maven")

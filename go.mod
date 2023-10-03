@@ -6,7 +6,6 @@ require (
 	dagger.io/dagger v0.8.7
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
-	github.com/mattn/go-colorable v0.1.13
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
 )
