@@ -60,6 +60,7 @@ func Deploy(c *gin.Context) {
 	projectName := c.Query("project")
 	branch := c.DefaultQuery("branch", "dev")
 	target := c.Query("target")
+	operateUser := c.Query("operateUser")
 
 	home, _ := os.UserHomeDir()
 	git := giturl.GenCloneGitRepoUrl(&giturl.GitConfig{
@@ -122,7 +123,7 @@ func Deploy(c *gin.Context) {
 		robot.send(&Message{
 			Msgtype: "text",
 			Text: Text{
-				Content: fmt.Sprintf("自动化通知: 开始更新后端 [%s] 服务, 两分钟后重试...【调试信息请忽略】", projectName),
+				Content: fmt.Sprintf("自动化通知: 开始更新后端 [%s] 服务, 两分钟后重试... operate by %s", projectName, operateUser),
 			},
 		})
 
@@ -158,7 +159,7 @@ func Deploy(c *gin.Context) {
 			robot.send(&Message{
 				Msgtype: "text",
 				Text: Text{
-					Content: fmt.Sprintf("自动化通知: 后端 [%s] 服务异常, 请检查【调试信息请忽略】", projectName),
+					Content: fmt.Sprintf("自动化通知: 后端 [%s] 服务异常, 请检查 operate by %s", projectName, operateUser),
 				},
 			})
 			done <- 1
@@ -170,7 +171,7 @@ func Deploy(c *gin.Context) {
 		robot.send(&Message{
 			Msgtype: "text",
 			Text: Text{
-				Content: fmt.Sprintf("自动化通知: 后端 [%s] 部署完成, 可正常使用【调试信息请忽略】", projectName),
+				Content: fmt.Sprintf("自动化通知: 后端 [%s] 部署完成, 可正常使用 operate by %s", projectName, operateUser),
 			},
 		})
 	}()

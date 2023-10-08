@@ -6,3 +6,4 @@ go.work
 go.work.sum
 *.jar
 logs/**
+deploy-dagger
