@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -223,7 +222,7 @@ func HTTPDoGetWithCtx(ctx context.Context, url string) ([]byte, error) {
 		return nil, errors.New("http response is nil")
 	}
 	defer response.Body.Close()
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "read response body")
 	}
