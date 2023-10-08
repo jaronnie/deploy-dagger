@@ -7,3 +7,10 @@ protocol = "http"
 url = "base_git_url"
 group = "your_group"
 accessToken = "your_access_token"
+
+[compose]
+yaml = "./docker-compose.yaml"
+[[compose.services]]
+name = "java-road"
+checkUrl = "http://172.22.71.244:8080/portal/frontpageNews/listByStatus"
+mapping = "backend-admin"

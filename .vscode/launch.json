@@ -10,7 +10,8 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["server"]
+            "args": ["server"],
+            "env": {"_EXPERIMENTAL_DAGGER_CLI_BIN":"~/Library/Caches/dagger/dagger-0.8.7"}
         }
     ]
 }
