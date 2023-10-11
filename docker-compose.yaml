@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  deploy-dagger:
+    build: .
+    ports:
+      - '30000:30000'
+    volumes:
+      - $HOME/.deploy-dagger.toml:/root/.deploy-dagger.toml
