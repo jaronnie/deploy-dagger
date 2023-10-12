@@ -26,12 +26,18 @@ func Send(c *gin.Context) {
 }
 
 type Message struct {
-	Msgtype string `json:"msgtype"`
-	Text    Text   `json:"text"`
+	Msgtype  string   `json:"msgtype"`
+	Text     Text     `json:"text"`
+	Markdown Markdown `json:"markdown"`
 }
 
 type Text struct {
 	Content string `json:"content"`
+}
+
+type Markdown struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
 func (r *Robot) send(message *Message) ([]byte, error) {

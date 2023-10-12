@@ -1,5 +1,8 @@
 port = "30000"
 
+[maven]
+image = "jaronnie/java:maven-3.6.3-openjdk-8u322"
+
 [git]
 private = true
 type = "gitlab"
@@ -13,4 +16,5 @@ yaml = "./docker-compose.yaml"
 [[compose.services]]
 name = "java-road"
 checkUrl = "http://172.22.71.244:8080/portal/frontpageNews/listByStatus"
+web = "http://172.22.71.244"
 mapping = "backend-admin"

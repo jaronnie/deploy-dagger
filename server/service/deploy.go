@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"dagger.io/dagger"
 	"github.com/gin-gonic/gin"
 	"github.com/jaronnie/deploy-dagger/server/pkg/dcompose"
 	"github.com/jaronnie/deploy-dagger/server/pkg/giturl"
+	"github.com/jaronnie/deploy-dagger/server/pkg/template"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -21,6 +23,28 @@ import (
 type ResponseWriter struct {
 	data chan []byte
 }
+
+type TextTemplateData struct {
+	ProjectName string
+	Web         string
+	Status      string
+	OperateUser string
+	Branch      string
+	Protocol    string
+	Url         string
+	Group       string
+}
+
+var TextTemplate = `
+自动化通知: {{.ProjectName}}
+
+-------------------------
+
+- 环境信息: {{.Web}}
+- 分支: [{{.Branch}}]({{.Protocol}}://{{.Url}}/{{.Group}}/{{.ProjectName}}/tree/{{.Branch}})
+- 状态: {{.Status}}
+- 执行人: {{.OperateUser}}
+`
 
 func (w *ResponseWriter) Write(p []byte) (n int, err error) {
 	w.data <- p
@@ -31,6 +55,7 @@ type ComposeService struct {
 	Name     string `json:"name"`
 	Mapping  string `json:"mapping"`
 	CheckUrl string `json:"checkUrl"`
+	Web      string `json:"web"`
 }
 
 func mappingComposeServiceWithProjectName(projectName string) (*ComposeService, error) {
@@ -61,6 +86,7 @@ func Deploy(c *gin.Context) {
 	branch := c.DefaultQuery("branch", "dev")
 	target := c.Query("target")
 	operateUser := c.Query("operateUser")
+	accessToken := c.Query("access_token")
 
 	home, _ := os.UserHomeDir()
 	git := giturl.GenCloneGitRepoUrl(&giturl.GitConfig{
@@ -97,8 +123,13 @@ func Deploy(c *gin.Context) {
 		// use a mvn:3.6.3 container
 		// get version
 		// execute
+
+		// TODO 兼容存在多 module 的情况以及普通项目
 		exportFile := filepath.Join(target[:len(target)-len(filepath.Ext(target))], "target", target)
-		_, _ = client.Container().From("maven:3.6.3-openjdk-8").
+		if strings.Contains(target, "SNAPSHOT") {
+			exportFile = filepath.Join("target", target)
+		}
+		_, _ = client.Container().From(viper.GetString("maven.image")).
 			WithExec([]string{"mvn", "--version"}).
 			WithFile("/root/.m2/settings.xml", settings).
 			WithDirectory("/src", project).
@@ -119,13 +150,31 @@ func Deploy(c *gin.Context) {
 			return
 		}
 
-		robot := Robot{AccessToken: "b226184a8c69d20d0b2c5b232884c15e59e43c3fb1a59d568468a16b206b4c0f"}
-		robot.send(&Message{
-			Msgtype: "text",
-			Text: Text{
-				Content: fmt.Sprintf("自动化通知: 开始更新后端 [%s] 服务, 两分钟后重试... operate by %s", projectName, operateUser),
+		robot := Robot{AccessToken: accessToken}
+
+		text := &TextTemplateData{
+			ProjectName: projectName,
+			Web:         cs.Web,
+			Status:      "部署中, 请等待",
+			OperateUser: operateUser,
+			Branch:      branch,
+			Protocol:    viper.GetString("git.protocol"),
+			Url:         viper.GetString("git.url"),
+			Group:       viper.GetString("git.group"),
+		}
+
+		b, _ := template.ParseTemplate(text, []byte(TextTemplate))
+		_, err = robot.send(&Message{
+			Msgtype: "markdown",
+			Markdown: Markdown{
+				Title: "report",
+				Text:  string(b),
 			},
 		})
+
+		if err != nil {
+			fmt.Printf("send meet error. Err: [%v]", err)
+		}
 
 		s, err := engine.RunDockerComposeCommand("stop", []string{cs.Mapping})
 		if err != nil {
@@ -156,10 +205,14 @@ func Deploy(c *gin.Context) {
 		err = checkOK(timeout, cs.CheckUrl)
 		if err != nil {
 			writer.Write([]byte(err.Error()))
+
+			text.Status = "部署失败, 请检查"
+			b, _ = template.ParseTemplate(text, []byte(TextTemplate))
 			robot.send(&Message{
-				Msgtype: "text",
-				Text: Text{
-					Content: fmt.Sprintf("自动化通知: 后端 [%s] 服务异常, 请检查 operate by %s", projectName, operateUser),
+				Msgtype: "markdown",
+				Markdown: Markdown{
+					Title: "report",
+					Text:  string(b),
 				},
 			})
 			done <- 1
@@ -168,10 +221,13 @@ func Deploy(c *gin.Context) {
 
 		// 部署完毕
 		done <- 1
+		text.Status = "部署成功"
+		b, _ = template.ParseTemplate(text, []byte(TextTemplate))
 		robot.send(&Message{
-			Msgtype: "text",
-			Text: Text{
-				Content: fmt.Sprintf("自动化通知: 后端 [%s] 部署完成, 可正常使用 operate by %s", projectName, operateUser),
+			Msgtype: "markdown",
+			Markdown: Markdown{
+				Title: "report",
+				Text:  string(b),
 			},
 		})
 	}()
